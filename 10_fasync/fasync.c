@@ -4,6 +4,11 @@
 #include <linux/fs.h>
 #include <linux/device.h>
 #include <linux/uaccess.h>
+#include <linux/atomic.h>
+#include <linux/wait.h>
+#include <linux/sched/signal.h>
+#include <linux/poll.h>
+#include <linux/workqueue.h>
 
 #define XXX_COUNTS	1
 #define XXX_NAMES	"xxx"
@@ -16,54 +21,55 @@ struct xxx_cdev {
 
 	struct class *class;
 	struct device *device;
-
-	char array[52];
 };
 
+static char array[52];
+static struct fasync_struct *async_queue;
 static struct xxx_cdev xxx;
 
 static ssize_t xxx_read(struct file *file, char __user *buffer, size_t size, loff_t *offset)
 {
 	int ret = 0;
-	struct xxx_cdev *xxx = file->private_data;
 	
-	if (size > sizeof(xxx->array))
+	if (size > sizeof(array))
 		return -1;
-
-	ret = copy_to_user(buffer, xxx->array, size);
+	
+	ret = copy_to_user(buffer, array, size);
 	if (ret < 0)
 		return -1;
-
+	
 	return size;
 }
 
 static ssize_t xxx_write(struct file *file, const char __user *buffer, size_t size, loff_t *offset)
 {
 	int ret = 0;
-	struct xxx_cdev *xxx = file->private_data;
 	
-	if (size > sizeof(xxx->array))
+	if (size > sizeof(array))
 		return -1;
 
-	ret = copy_from_user(xxx->array, buffer, size);
+	ret = copy_from_user(array, buffer, size);
 	if (ret < 0)
 		return -1;
 
-	printk("write data :%s\n", xxx->array);
+	kill_fasync(&async_queue, SIGIO, POLL_IN);
+	
 	return size;
 }
 
 static int xxx_open(struct inode *inode, struct file *file)
 {
-	file->private_data = &xxx;
-	
-	printk("xxx_open\n");
 	return 0;
+}
+
+static int xxx_fasync(int fd, struct file *file, int on)
+{
+	return fasync_helper(fd, file, on, &async_queue);
 }
 
 static int xxx_release(struct inode *inode, struct file *file)
 {
-	printk("xxx_release\n");
+	//xxx_fasync(-1, file, 0);
 	return 0;
 }
 
@@ -73,12 +79,12 @@ static const struct file_operations xxx_fops = {
 	.write		= xxx_write,
 	.open		= xxx_open,
 	.release	= xxx_release,
+	.fasync		= xxx_fasync,
 };
 
 static int __init xxx_init(void)
 {
 	int ret;
-	printk("xxx_init\n");
 
 	memset(&xxx, 0, sizeof(xxx));
 	if (xxx.major){
@@ -130,7 +136,6 @@ static void __exit xxx_exit(void)
 	class_destroy(xxx.class);
 	cdev_del(&xxx.cdev);
 	unregister_chrdev_region(xxx.devid, XXX_COUNTS);
-	printk("xxx_exit\n");
 }
 
 module_init(xxx_init);

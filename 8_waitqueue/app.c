@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	char array[52] = {0};
 	int fd, ret;
 
-	if (argc != 3)
+	if (argc != 2)
 		return -1;
 	
 	fd = open(argv[1], O_RDWR);
@@ -20,13 +20,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ret = write(fd, argv[2], strlen(argv[2]));
-	if (ret < 0){
-		printf("write %s failure\n", argv[1]);
-		return -1;
-	}
+	printf("current pid %d \n", getpid());
 
-	ret = read(fd, array, strlen(argv[2]));
+	ret = read(fd, array, 52);
 	if (ret < 0){
 		printf("read %s failure\n", argv[1]);
 		return -1;
