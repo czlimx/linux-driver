@@ -77,7 +77,7 @@ static inline int atomic_fetch_##op(int i, atomic_t *v)			\
 ## atomic_add解析
 ```c
 ATOMIC_OPS(add, +=, add)
-#define atomic_dec(v)		atomic_sub(1, v)
+#define atomic_inc(v)		atomic_add(1, v)
 
 ATOMIC_OP(add, +=, add)					\
 ATOMIC_OP_RETURN(add, +=, add)				\
