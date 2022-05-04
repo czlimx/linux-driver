@@ -1,5 +1,3 @@
-[toc]
-
 # atomic_t
 ```c
 include\linux\types.h
