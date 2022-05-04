@@ -203,7 +203,7 @@ ssize_t xxx_write(struct file *filp, const char __user *buf, size_t size, loff_t
 	atomic_add(1, &dev->atomic);
 }
 
-int (*open) (struct inode *inode, struct file *filp)
+int xxx_open(struct inode *inode, struct file *filp)
 {
 	filp->private_data = &xxx_dev;
 }
